@@ -1059,8 +1059,7 @@ module Mem = struct
   let v ?dotgit ?compression ?buffers root =
     let conf = (root, dotgit, compression, buffers) in
     match find_conf conf with
-    | Some x -> Lwt.return x
-    | None -> v' ?dotgit ?compression ?buffers root >|= add_conf conf
+    | Some _ | None -> v' ?dotgit ?compression ?buffers root >|= add_conf conf
 end
 
 module Make
