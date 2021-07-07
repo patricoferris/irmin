@@ -27,6 +27,15 @@ module Log = (val Logs.src_log src : Logs.LOG)
 module type S = sig
   type repo
   type t
+  type conn
+
+  val callback :
+    ?strict:bool ->
+    repo ->
+    conn ->
+    Cohttp_lwt.Request.t ->
+    Cohttp_lwt.Body.t ->
+    (Cohttp_lwt.Response.t * Cohttp_lwt.Body.t) Lwt.t
 
   val v : ?strict:bool -> repo -> t
 end
@@ -371,8 +380,9 @@ module Make (HTTP : Cohttp_lwt.S.Server) (S : Irmin.S) = struct
 
   type repo = S.Repo.t
   type t = HTTP.t
+  type conn = HTTP.conn
 
-  let v ?strict:_ db =
+  let callback ?strict:_ db =
     let blob = P.Repo.contents_t db in
     let tree = P.Repo.node_t db in
     let commit = P.Repo.commit_t db in
@@ -417,6 +427,11 @@ module Make (HTTP : Cohttp_lwt.S.Server) (S : Irmin.S) = struct
       (* Finally, send the response to the client *)
       HTTP.respond ~headers ~body ~status ()
     in
+    callback
+
+  let v ?strict db =
+    let callback = callback ?strict db in
+    let pp_con = Fmt.of_to_string Cohttp.Connection.to_string in
     (* create the server and handle requests with the function defined above *)
     let conn_closed (_, conn) =
       Log.debug (fun l -> l "connection %a closed" pp_con conn)

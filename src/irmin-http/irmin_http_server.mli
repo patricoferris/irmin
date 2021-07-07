@@ -23,6 +23,21 @@ module type S = sig
   type t
   (** The type for HTTP configuration. *)
 
+  type conn
+  (** The type for HTTP connections. *)
+
+  val callback :
+    ?strict:bool ->
+    repo ->
+    conn ->
+    Cohttp_lwt.Request.t ->
+    Cohttp_lwt.Body.t ->
+    (Cohttp_lwt.Response.t * Cohttp_lwt.Body.t) Lwt.t
+  (** [callback repo] provides you with a suitable Cohttp function to reuse in
+      your own server. Care must be taken to not have overlapping resources when
+      used with another server. *)
+
+
   val v : ?strict:bool -> repo -> t
   (** [v repo] returns the configuration for a server serving the contents of
       [repo]. If [strict] is set, incoming connections will fail if they do not
@@ -31,4 +46,4 @@ end
 
 (** Create an HTTP server, serving the contents of an Irmin database. *)
 module Make (HTTP : Cohttp_lwt.S.Server) (S : Irmin.S) :
-  S with type repo = S.Repo.t and type t = HTTP.t
+  S with type repo = S.Repo.t and type t = HTTP.t and type conn = HTTP.conn
