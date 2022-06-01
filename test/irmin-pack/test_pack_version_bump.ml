@@ -167,8 +167,8 @@ let test_RW_version_bump () : unit Lwt.t =
   Lwt.return ()
 
 let tests =
-  let f g () = Lwt_main.run @@ g () in
-  Alcotest.
+  let f g _switch () = g () in
+  Alcotest_lwt.
     [
       test_case "test_RO_no_version_bump" `Quick (f test_RO_no_version_bump);
       test_case "test_RW_no_version_bump" `Quick (f test_RW_no_version_bump);

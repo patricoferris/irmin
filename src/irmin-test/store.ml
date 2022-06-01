@@ -21,7 +21,7 @@ let src = Logs.Src.create "test" ~doc:"Irmin tests"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-module Make (S : Generic_key) = struct
+module Make_suite (Zzz : Common.Sleep) (S : Generic_key) = struct
   include Common.Make_helpers (S)
   module History = Irmin.Commit.History (B.Commit)
 
@@ -2465,33 +2465,39 @@ module Make (S : Generic_key) = struct
       S.Backend.Repo.close repo
     in
     (* Test collisions with the empty node (and its commit), *)
-    run x (test @@ fun () -> S.Tree.empty () |> Lwt.return);
+    run x (test @@ fun () -> S.Tree.empty () |> Lwt.return) >>= fun () ->
     (* with a length one node, *)
-    run x (test @@ fun () -> add_entries (S.Tree.empty ()) 1);
+    run x (test @@ fun () -> add_entries (S.Tree.empty ()) 1) >>= fun () ->
     (* and with a length >256 node (which is the threshold for unstable inodes
        in irmin pack). *)
     run x (test @@ fun () -> add_entries (S.Tree.empty ()) 260)
 end
 
-let suite' l ?(prefix = "") (_, x) =
+let suite' sleep l ?(prefix = "") (_, x) =
   let (module S) = Suite.store_generic_key x in
-  let module T = Make (S) in
+  let module Zzz = struct
+    let sleep = sleep
+  end in
+  let module T = Make_suite (Zzz) (S) in
   (prefix ^ x.name, l)
 
 let when_ b x = if b then x else []
 
-let suite (speed, x) =
+let suite sleep (speed, x) =
   let (module S) = Suite.store_generic_key x in
-  let module T = Make (S) in
+  let module Zzz = struct
+    let sleep = sleep
+  end in
+  let module T = Make_suite (Zzz) (S) in
   let module T_graph = Store_graph.Make (S) in
-  let module T_watch = Store_watch.Make (Log) (S) in
+  let module T_watch = Store_watch.Make (Log) (Zzz) (S) in
   let with_tree_enabled =
     (* Disabled for flakiness. See https://github.com/mirage/irmin/issues/1090. *)
     not
       (List.mem ~equal:String.equal (Suite.name x)
          [ "FS"; "GIT"; "HTTP.FS"; "HTTP.GIT" ])
   in
-  suite'
+  suite' sleep
     ([
        ("High-level operations on trees", speed, T.test_trees x);
        ("Basic operations on contents", speed, T.test_contents x);
@@ -2529,17 +2535,20 @@ let suite (speed, x) =
     @ List.map (fun (n, test) -> ("Watch." ^ n, speed, test x)) T_watch.tests)
     (speed, x)
 
-let slow_suite (speed, x) =
+let slow_suite sleep (speed, x) =
   let (module S) = Suite.store_generic_key x in
-  let module T = Make (S) in
-  suite' ~prefix:"SLOW_"
+  let module Zzz = struct
+    let sleep = sleep
+  end in
+  let module T = Make_suite (Zzz) (S) in
+  suite' ~prefix:"SLOW_" sleep
     [
       ("Commit wide node", speed, T.test_commit_wide_node x);
       ("Wide nodes", `Slow, T.test_wide_nodes x);
     ]
     (speed, x)
 
-let run name ?(slow = false) ?random_seed ~misc tl =
+let run name ?(slow = false) ?random_seed ~sleep ~misc tl =
   let () =
     match random_seed with
     | Some x -> Random.init x
@@ -2548,6 +2557,6 @@ let run name ?(slow = false) ?random_seed ~misc tl =
   Printexc.record_backtrace true;
   (* Ensure that failures occuring in async lwt threads are raised. *)
   (Lwt.async_exception_hook := fun exn -> raise exn);
-  let tl1 = List.map suite tl in
-  let tl1 = if slow then tl1 @ List.map slow_suite tl else tl1 in
-  Alcotest.run name (misc @ tl1)
+  let tl1 = List.map (suite sleep) tl in
+  let tl1 = if slow then tl1 @ List.map (slow_suite sleep) tl else tl1 in
+  Alcotest_lwt.run name (misc @ tl1)

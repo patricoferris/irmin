@@ -15,7 +15,7 @@
  *)
 
 module Git : sig
-  val misc : unit Alcotest.test_case list
+  val misc : unit Alcotest_lwt.test_case list
   val store : (module Test_git.G)
   val suite : Irmin_test.Suite.t
 end
@@ -29,5 +29,5 @@ module FS : sig
 end
 
 module Conf : sig
-  val misc : unit Alcotest.test_case list
+  val misc : unit Alcotest_lwt.test_case list
 end

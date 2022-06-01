@@ -159,8 +159,6 @@ let test_on_disk () =
 
 let tests =
   [
-    Alcotest.test_case "in memory" `Quick (fun () ->
-        Lwt_main.run (test_in_memory ()));
-    Alcotest.test_case "on disk" `Quick (fun () ->
-        Lwt_main.run (test_on_disk ()));
+    Alcotest_lwt.test_case "in memory" `Quick (fun _switch -> test_in_memory);
+    Alcotest_lwt.test_case "on disk" `Quick (fun _switch -> test_on_disk);
   ]

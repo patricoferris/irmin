@@ -92,8 +92,8 @@ module Git = struct
     S.set_exn t ~info:(info "snd one") [ "fst"; "snd" ] "maybe?" >>= fun () ->
     S.set_exn t ~info:(info "fst one") [ "fst" ] "hoho"
 
-  let misc : unit Alcotest.test_case list =
-    [ ("non-bare", `Quick, fun () -> Lwt_main.run (test_non_bare ())) ]
+  let misc : unit Alcotest_lwt.test_case list =
+    [ ("non-bare", `Quick, fun () -> test_non_bare ()) ]
 end
 
 module Http = struct
@@ -119,6 +119,6 @@ module Conf = struct
     Alcotest.(check bool) "fresh" true fresh;
     Lwt.return_unit
 
-  let misc : unit Alcotest.test_case list =
-    [ ("config", `Quick, fun () -> Lwt_main.run (test_config ())) ]
+  let misc : unit Alcotest_lwt.test_case list =
+    [ ("config", `Quick, fun () -> test_config ()) ]
 end
