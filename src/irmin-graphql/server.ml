@@ -22,10 +22,7 @@ module type S = sig
 
   type repo
   type server
-
-  type response_action =
-    [ `Expert of Cohttp.Response.t * (IO.ic -> IO.oc -> unit Lwt.t)
-    | `Response of Cohttp.Response.t * Cohttp_lwt.Body.t ]
+  type response_action
 
   val schema : repo -> unit Schema.schema
 
