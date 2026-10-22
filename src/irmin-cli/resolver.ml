@@ -41,7 +41,7 @@ let pconv t =
     | Ok x -> `Ok x
     | Error (`Msg e) -> `Error e
   in
-  (parse, pp)
+  Arg.conv (parse, pp)
 
 let config_path_term =
   let name = "config" in
